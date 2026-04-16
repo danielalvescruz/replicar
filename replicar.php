@@ -85,7 +85,8 @@ $sites[] = array(
 );
 
 $excessao = array(
-	"custom.css"
+	"custom.css",
+	"/models/nfe.php"
 );
 
 $excessao_exclusiva = array();
