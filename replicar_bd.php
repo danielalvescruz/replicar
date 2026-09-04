@@ -12,7 +12,7 @@
 $sites = array(
     array(
         'nome'     => 'Sacos Site (REFERÊNCIA)',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'sacosbayplastic_nsite',
         'pass'     => '3Caras&1Fera#',
         'db'       => 'sacosbayplastic_nsite',
@@ -21,7 +21,7 @@ $sites = array(
     ),
     array(
         'nome'     => 'Sacos Teste',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'sacosbayplastic_nsite',
         'pass'     => '3Caras&1Fera#',
         'db'       => 'sacosbayplastic_teste',
@@ -30,7 +30,7 @@ $sites = array(
     ),
    array(
         'nome'     => 'Clube Comary',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'clubecomary',
         'pass'     => 'que#de2senha2019',
         'db'       => 'clubecomary',
@@ -39,7 +39,7 @@ $sites = array(
     ),
     array(
         'nome'     => 'Clube Comary Teste',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'comary_teste',
         'pass'     => '2Caras#&1Fera',
         'db'       => 'comary_teste',
@@ -48,7 +48,7 @@ $sites = array(
     ),
     array(
         'nome'     => 'CEERJ',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'site',
         'pass'     => '3Caras&1Fera#',
         'db'       => 'site',
@@ -57,7 +57,7 @@ $sites = array(
     ),
      array(
         'nome'     => 'Ifen',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'ifen_nsite',
         'pass'     => '3CarasE1Fera#',
         'db'       => 'ifen_nsite',
@@ -66,7 +66,7 @@ $sites = array(
     ),
      array(
         'nome'     => 'Edições Ifen',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'edicoes',
         'pass'     => '3Caras&1Fera#',
         'db'       => 'edicoes_',
@@ -75,7 +75,7 @@ $sites = array(
     ),
     array(
         'nome'     => 'Aequor',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'aequor',
         'pass'     => '3Caras&1Fera#',
         'db'       => 'aequor',
@@ -84,7 +84,7 @@ $sites = array(
     ),
     array(
         'nome'     => 'Sistema',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'sistema',
         'pass'     => '3CarasE1Fera#',
         'db'       => 'sistema_',
@@ -93,7 +93,7 @@ $sites = array(
     ),
     array(
         'nome'     => 'Grupo New Smart Teste',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'gnewteste_',
         'pass'     => '3Caras&1Fera#',
         'db'       => 'gnewteste_',
@@ -102,7 +102,7 @@ $sites = array(
     ),
     array(
         'nome'     => 'Grupo New Smart',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'gnewsmart',
         'pass'     => '3Caras&1Fera#',
         'db'       => 'gnewsmart_',
@@ -111,7 +111,7 @@ $sites = array(
     ),
     array(
         'nome'     => 'Ecorio Nsite',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'ecorio_nsite',
         'pass'     => '3Caras&1Fera#',
         'db'       => 'ecorio_nsite',
@@ -120,7 +120,7 @@ $sites = array(
     ),
     array(
         'nome'     => 'Ecorio Teste',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'ecorioco_teste',
         'pass'     => 'que#de2senha2019',
         'db'       => 'ecorioco_teste',
@@ -129,16 +129,16 @@ $sites = array(
     ),
     array(
         'nome'     => 'Ecorio',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'ecorioco_site',
         'pass'     => 'que#de2senha2019',
         'db'       => 'ecorioco_site',
-        'prefixo'  => 'site_',
+        'prefixo'  => 'ecorio_',
         'usar'  => 'perguntar',
     ),
     array(
         'nome'     => 'Fibrolar',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'nsite',
         'pass'     => '3Caras&1Fera#',
         'db'       => 'nsite_',
@@ -146,15 +146,68 @@ $sites = array(
         'usar'  => 'sim',
     ),
 
-     array(
+    array(
         'nome'     => 'Limptek',
-        'host'     => 'vps4.nunesti.com',
+        'host'     => 'vps4.nuneshost.com',
         'user'     => 'limptek',
         'pass'     => '3Caras&1Fera#',
         'db'       => 'limptek_',
         'prefixo'  => 'limptek_',
         'usar'  => 'sim',
     ),
+
+    array(
+        'nome'     => 'Golf - VPS Márcio',
+        'host'     => 'vps4.nuneshost.com',
+        'user'     => 'ricardo_dev_golf',
+        'pass'     => 'imrj7uAnJ8AqNre',
+        'db'       => 'ricardo_dev_golf',
+        'prefixo'  => 'dev_',
+        'usar'  => 'sim',
+    ),
+
+    array(
+        'nome'     => 'ricardo_dev_golf',
+        'host'     => '100.96.10.71',
+        'user'     => 'ricardo_dev_golf',
+        'pass'     => 'imrj7uAnJ8AqNre',
+        'db'       => 'ricardo_dev_golf',
+        'prefixo'  => 'dev_',
+        'usar'  => 'sim',
+    ),
+
+    array(
+        'nome'     => 'ricardo_dev_clubecomary',
+        'host'     => '100.96.10.71',
+        'user'     => 'ricardo_dev_clubecomary',
+        'pass'     => 'imrj7uAnJ8AqNre',
+        'db'       => 'ricardo_dev_clubecomary',
+        'prefixo'  => 'dev_',
+        'usar'  => 'sim',
+    ),
+
+    array(
+        'nome'     => 'ricardo_dev_bay',
+        'host'     => '100.96.10.71',
+        'user'     => 'ricardo_dev_sacosbayplastic',
+        'pass'     => 'imrj7uAnJ8AqNre',
+        'db'       => 'ricardo_dev_sacosbayplastic',
+        'prefixo'  => 'nsite_',
+        'usar'  => 'sim',
+    ),
+
+     array(
+        'nome'     => 'ricardo_dev_newsmart',
+        'host'     => '100.96.10.71',
+        'user'     => 'ricardo_dev_gnewsmart',
+        'pass'     => '3Caras&1Fera#',
+        'db'       => 'ricardo_dev_gnewsmart',
+        'prefixo'  => 'gnewsmart_',
+        'usar'  => 'sim',
+    ),
+
+   
+
 );
 
 // =====================================================================
@@ -231,10 +284,13 @@ if (strtolower($resp) !== 's') {
 
 // =====================================================================
 // Função auxiliar: conecta num site
+// Recebe $erro por referência para devolver o motivo real da falha
+// (ex: senha incorreta, banco inexistente, host inacessível, etc)
 // =====================================================================
-function conectarSite($site) {
+function conectarSite($site, &$erro = null) {
     $conn = @new mysqli($site['host'], $site['user'], $site['pass'], $site['db']);
     if ($conn->connect_error) {
+        $erro = $conn->connect_error; // guarda o motivo real do erro de conexão
         return null;
     }
     $conn->set_charset('utf8');
@@ -401,9 +457,10 @@ foreach ($sites as $indice => $site) {
     }
 
     // Conecta
-    $conn = conectarSite($site);
+    $erroConexao = null;
+    $conn = conectarSite($site, $erroConexao);
     if ($conn === null) {
-        echo "   ERRO de conexão\n";
+        echo "   ERRO de conexão: $erroConexao\n";
         $falha++;
         continue;
     }

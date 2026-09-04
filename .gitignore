@@ -1,0 +1,29 @@
+# Ignorar pasta .vscode
+.vscode/
+
+# Ignorar arquivos temporários do sistema
+.DS_Store
+Thumbs.db
+
+# Ignorar arquivos de ambiente (como .env)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignorar pastas de dependências
+node_modules/
+bower_components/
+
+# Ignorar builds
+/dist/
+/out/
+/build/
+
+# Arquivos de log e debug
+*.log
+*.sqlite
+*.sql
+*.pyc
+__pycache__

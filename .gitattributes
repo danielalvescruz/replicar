@@ -1,0 +1,7 @@
+# NUNCA converter quebras de linha em arquivos PHP
+*.php -text
+
+# Para outros arquivos, pode converter se quiser
+*.js text
+*.css text
+*.html text
