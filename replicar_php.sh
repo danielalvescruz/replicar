@@ -51,14 +51,15 @@ else
 fi
 
 echo ""
-sleep 3
-
-# Forca o fechamento da janela do Konsole via D-Bus (mais confiavel que $WINDOWID,
-# que nessa acao especifica do Dolphin vem com um valor invalido). O Konsole exporta
-# KONSOLE_DBUS_SERVICE e KONSOLE_DBUS_WINDOW pra identificar a propria janela/sessao.
-# Usamos dbus-send (ja vem no sistema) em vez de qdbus (nao instalado e com dependencia
-# quebrada nesta maquina).
-if [ -n "$KONSOLE_DBUS_SERVICE" ] && [ -n "$KONSOLE_DBUS_WINDOW" ]; then
-    dbus-send --session --dest="$KONSOLE_DBUS_SERVICE" "$KONSOLE_DBUS_WINDOW" org.kde.konsole.Window.close
+while true; do
+    read -n1 -s -p "Pressione 'r' para sair..." TECLA
+    echo ""
+    if [ "$TECLA" = "r" ] || [ "$TECLA" = "R" ]; then
+        break
+    fi
+done
+# Se o processo pai for o Konsole, encerra ele diretamente
+if [ "$(ps -o comm= -p $PPID)" = "konsole" ]; then
+    kill -9 $PPID
 fi
 exit
