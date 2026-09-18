@@ -16,7 +16,29 @@ if [[ "$PASTA_ALVO" == *"kio-fuse"* ]]; then
     echo "Pasta remota: $REMOTE_DIR"
     echo "---------------------------------------------------"
 
-    ssh -t root@100.96.10.71 "cd '$REMOTE_DIR' && php /home/ricardo/web/dev.aguiarsoftware.com.br/public_html/replicar/replicar.php"
+    # Usa o alias ricardo-bay (~/.ssh/config -> User daniel, chave ed25519) em vez de root@,
+    # assim conecta com a sua chave e nao pede senha nenhuma
+    #
+    # A saida completa e capturada num arquivo temporario (pra checar depois se o envio
+    # SFTP pro Note 1 falhou) e tambem mostrada na tela em tempo real via tee. Nao filtramos
+    # nada ao vivo (grep quebrava o eco do que voce digita nos prompts interativos do PHP,
+    # ja que grep so libera a saida linha a linha) - a mensagem do git abaixo so complementa
+    # o aviso quando o erro acontecer.
+    LOG_TEMP=$(mktemp)
+    ssh -t ricardo-bay "cd '$REMOTE_DIR' && php /home/ricardo/web/dev.aguiarsoftware.com.br/public_html/replicar/replicar.php" | tee "$LOG_TEMP"
+
+    # Se deu o erro de SFTP/chave pro Note 1, limpa a tela e reimprime o log inteiro sem
+    # essa linha, trocando por um aviso pra copiar manualmente pro git. A filtragem so
+    # acontece DEPOIS que o processo termina (nao durante), pra nao travar o eco do que
+    # voce digita nos prompts interativos do PHP - filtrar ao vivo com grep quebra isso,
+    # pois grep so libera a saida linha a linha completa.
+    if grep -qE "Erro: login SFTP falhou|Erro: chave SSH não encontrada" "$LOG_TEMP"; then
+        clear
+        grep -vE "Erro: login SFTP falhou|Erro: chave SSH não encontrada" "$LOG_TEMP"
+        echo ""
+        echo "Copie ou coloque o(s) arquivo(s) replicado(s) no git"
+    fi
+    rm -f "$LOG_TEMP"
 
 else
     # --- AMBIENTE MÁQUINA LOCAL (DANIEL ALVES) ---
@@ -29,5 +51,14 @@ else
 fi
 
 echo ""
-read -p "Pressione ENTER para sair..."
+sleep 3
+
+# Forca o fechamento da janela do Konsole via D-Bus (mais confiavel que $WINDOWID,
+# que nessa acao especifica do Dolphin vem com um valor invalido). O Konsole exporta
+# KONSOLE_DBUS_SERVICE e KONSOLE_DBUS_WINDOW pra identificar a propria janela/sessao.
+# Usamos dbus-send (ja vem no sistema) em vez de qdbus (nao instalado e com dependencia
+# quebrada nesta maquina).
+if [ -n "$KONSOLE_DBUS_SERVICE" ] && [ -n "$KONSOLE_DBUS_WINDOW" ]; then
+    dbus-send --session --dest="$KONSOLE_DBUS_SERVICE" "$KONSOLE_DBUS_WINDOW" org.kde.konsole.Window.close
+fi
 exit
