@@ -27,3 +27,17 @@ bower_components/
 *.sql
 *.pyc
 __pycache__
+
+# Cópia automática do sites.json feita pela tela Sites
+sites.json.bak
+sites.json.tmp
+
+# Lista de sites e senha da versão web: cada máquina tem a sua e têm senhas - não vão pro git
+sites.json
+.sites.json
+.senha_web
+.sites.json.bak
+.sites.json.tmp
+
+# Lixeira interna do MEGA
+.debris/

@@ -6,209 +6,49 @@
 // Uso: php executar_sql.php
 // =====================================================================
 
-// Lista de sites — adicione/remova conforme necessário
-// IMPORTANTE: o PRIMEIRO site é usado como referência para copiar tabelas
+// Lista de sites: vem do sites.json (mesma pasta deste arquivo) - é a mesma lista usada pelo
+// replicar.php e pela versão web. Aqui só entram os sites ativos que têm a parte "banco".
+// O site marcado como "referencia" vai primeiro: é dele que as tabelas são copiadas.
 // Campo 'usar': 'sim' = executa, 'perguntar' = pergunta antes, 'nao' = pula
-$sites = array(
-    array(
-        'nome'     => 'Sacos Site (REFERÊNCIA)',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'sacosbayplastic_nsite',
-        'pass'     => '3Caras&1Fera#',
-        'db'       => 'sacosbayplastic_nsite',
-        'prefixo'  => 'nsite_',
-        'usar'  => 'sim',
-    ),
-    array(
-        'nome'     => 'Sacos Teste',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'sacosbayplastic_nsite',
-        'pass'     => '3Caras&1Fera#',
-        'db'       => 'sacosbayplastic_teste',
-        'prefixo'  => 'nsite_',
-        'usar'  => 'sim',
-    ),
-   array(
-        'nome'     => 'Clube Comary',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'clubecomary',
-        'pass'     => 'que#de2senha2019',
-        'db'       => 'clubecomary',
-        'prefixo'  => 'site_',
-        'usar'  => 'sim',
-    ),
-    array(
-        'nome'     => 'Clube Comary Teste',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'comary_teste',
-        'pass'     => '2Caras#&1Fera',
-        'db'       => 'comary_teste',
-        'prefixo'  => 'teste_',
-        'usar'  => 'sim',
-    ),
-    array(
-        'nome'     => 'CEERJ',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'site',
-        'pass'     => '3Caras&1Fera#',
-        'db'       => 'site',
-        'prefixo'  => 'site_',
-        'usar'  => 'sim',
-    ),
-     array(
-        'nome'     => 'Ifen',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'ifen_nsite',
-        'pass'     => '3CarasE1Fera#',
-        'db'       => 'ifen_nsite',
-        'prefixo'  => 'ifen_',
-        'usar'  => 'sim',
-    ),
-     array(
-        'nome'     => 'Edições Ifen',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'edicoes',
-        'pass'     => '3Caras&1Fera#',
-        'db'       => 'edicoes_',
-        'prefixo'  => 'edicoes_',
-        'usar'  => 'sim',
-    ),
-    array(
-        'nome'     => 'Aequor',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'aequor',
-        'pass'     => '3Caras&1Fera#',
-        'db'       => 'aequor',
-        'prefixo'  => 'aequor_',
-        'usar'  => 'sim',
-    ),
-    array(
-        'nome'     => 'Sistema',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'sistema',
-        'pass'     => '3CarasE1Fera#',
-        'db'       => 'sistema_',
-        'prefixo'  => 'sistema_',
-        'usar'  => 'sim',
-    ),
-    array(
-        'nome'     => 'Grupo New Smart Teste',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'gnewteste_',
-        'pass'     => '3Caras&1Fera#',
-        'db'       => 'gnewteste_',
-        'prefixo'  => 'gnewteste_',
-        'usar'  => 'sim',
-    ),
-    array(
-        'nome'     => 'Grupo New Smart',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'gnewsmart',
-        'pass'     => '3Caras&1Fera#',
-        'db'       => 'gnewsmart_',
-        'prefixo'  => 'gnewsmart_',
-        'usar'  => 'sim',
-    ),
-    array(
-        'nome'     => 'Ecorio Nsite',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'ecorio_nsite',
-        'pass'     => '3Caras&1Fera#',
-        'db'       => 'ecorio_nsite',
-        'prefixo'  => 'nsite_',
-        'usar'  => 'sim',
-    ),
-    array(
-        'nome'     => 'Ecorio Teste',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'ecorioco_teste',
-        'pass'     => 'que#de2senha2019',
-        'db'       => 'ecorioco_teste',
-        'prefixo'  => 'teste_',
-        'usar'  => 'perguntar',
-    ),
-    array(
-        'nome'     => 'Ecorio',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'ecorioco_site',
-        'pass'     => 'que#de2senha2019',
-        'db'       => 'ecorioco_site',
-        'prefixo'  => 'ecorio_',
-        'usar'  => 'perguntar',
-    ),
-    array(
-        'nome'     => 'Fibrolar',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'nsite',
-        'pass'     => '3Caras&1Fera#',
-        'db'       => 'nsite_',
-        'prefixo'  => 'nsite_',
-        'usar'  => 'sim',
-    ),
-
-    array(
-        'nome'     => 'Limptek',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'limptek',
-        'pass'     => '3Caras&1Fera#',
-        'db'       => 'limptek_',
-        'prefixo'  => 'limptek_',
-        'usar'  => 'sim',
-    ),
-
-    array(
-        'nome'     => 'Golf - VPS Márcio',
-        'host'     => 'vps4.nuneshost.com',
-        'user'     => 'ricardo_dev_golf',
-        'pass'     => 'imrj7uAnJ8AqNre',
-        'db'       => 'ricardo_dev_golf',
-        'prefixo'  => 'dev_',
-        'usar'  => 'sim',
-    ),
-
-    array(
-        'nome'     => 'ricardo_dev_golf',
-        'host'     => '100.96.10.71',
-        'user'     => 'ricardo_dev_golf',
-        'pass'     => 'imrj7uAnJ8AqNre',
-        'db'       => 'ricardo_dev_golf',
-        'prefixo'  => 'dev_',
-        'usar'  => 'sim',
-    ),
-
-    array(
-        'nome'     => 'ricardo_dev_clubecomary',
-        'host'     => '100.96.10.71',
-        'user'     => 'ricardo_dev_clubecomary',
-        'pass'     => 'imrj7uAnJ8AqNre',
-        'db'       => 'ricardo_dev_clubecomary',
-        'prefixo'  => 'dev_',
-        'usar'  => 'sim',
-    ),
-
-    array(
-        'nome'     => 'ricardo_dev_bay',
-        'host'     => '100.96.10.71',
-        'user'     => 'ricardo_dev_sacosbayplastic',
-        'pass'     => 'imrj7uAnJ8AqNre',
-        'db'       => 'ricardo_dev_sacosbayplastic',
-        'prefixo'  => 'nsite_',
-        'usar'  => 'sim',
-    ),
-
-     array(
-        'nome'     => 'ricardo_dev_newsmart',
-        'host'     => '100.96.10.71',
-        'user'     => 'ricardo_dev_gnewsmart',
-        'pass'     => '3Caras&1Fera#',
-        'db'       => 'ricardo_dev_gnewsmart',
-        'prefixo'  => 'gnewsmart_',
-        'usar'  => 'sim',
-    ),
-
-   
-
-);
+// No servidor do Ricardo ele fica em ~/.replicar/sites.json, fora do public_html (tem as senhas)
+// Aqui no servidor a lista fica em .sites.json (nome com ponto: o site não deixa baixar pela web)
+$arquivoSites = __DIR__ . '/sites.json';
+if (!file_exists($arquivoSites)) {
+    $arquivoSites = __DIR__ . '/.sites.json';
+}
+if (!file_exists($arquivoSites) && getenv('HOME')) {
+    $arquivoSites = getenv('HOME') . '/.replicar/sites.json';
+}
+$configSites  = json_decode((string) @file_get_contents($arquivoSites), true);
+if (!is_array($configSites) || !isset($configSites['sites']) || !is_array($configSites['sites'])) {
+    echo "Não foi possível ler a lista de sites em $arquivoSites\n";
+    exit(1);
+}
+$sites = array();
+foreach ($configSites['sites'] as $s) {
+    if (empty($s['ativo']) || empty($s['banco'])) {
+        continue;
+    }
+    $b = $s['banco'];
+    $site = array(
+        'nome'    => $s['nome'] . (!empty($b['referencia']) ? ' (REFERÊNCIA)' : ''),
+        'host'    => $b['host'],
+        'user'    => $b['usuario'],
+        'pass'    => $b['senha'],
+        'db'      => $b['banco'],
+        'prefixo' => $b['prefixo'],
+        'usar'    => isset($b['usar']) ? $b['usar'] : 'sim',
+    );
+    if (!empty($b['referencia'])) {
+        array_unshift($sites, $site);
+    } else {
+        $sites[] = $site;
+    }
+}
+if (!$sites) {
+    echo "Nenhum site com banco de dados no $arquivoSites\n";
+    exit(1);
+}
 
 // =====================================================================
 // Solicita o SQL ao usuário
@@ -220,14 +60,19 @@ echo " linha contendo apenas: fim\n";
 echo "========================================\n";
 
 $sqlOriginal = '';
-$stdin = fopen('php://stdin', 'r');
-while (($linha = fgets($stdin)) !== false) {
-    if (trim($linha) === 'fim') {
-        break;
+if (function_exists('replicar_web_sql')) {
+    // Versão web do servidor (web/): o SQL vem da página
+    $sqlOriginal = replicar_web_sql();
+} else {
+    $stdin = fopen('php://stdin', 'r');
+    while (($linha = fgets($stdin)) !== false) {
+        if (trim($linha) === 'fim') {
+            break;
+        }
+        $sqlOriginal .= $linha;
     }
-    $sqlOriginal .= $linha;
+    fclose($stdin);
 }
-fclose($stdin);
 
 $sqlOriginal = trim($sqlOriginal);
 
@@ -273,9 +118,13 @@ echo $sqlOriginal . "\n";
 echo "----------------------------------------\n";
 echo "\nDeseja executar em " . count($sites) . " site(s)? (s/N): ";
 
-$stdin = fopen('php://stdin', 'r');
-$resp  = trim(fgets($stdin));
-fclose($stdin);
+if (function_exists('replicar_web_resposta')) {
+    $resp = replicar_web_resposta("Deseja executar em " . count($sites) . " site(s)? (s/N):");
+} else {
+    $stdin = fopen('php://stdin', 'r');
+    $resp  = trim(fgets($stdin));
+    fclose($stdin);
+}
 
 if (strtolower($resp) !== 's') {
     echo "Cancelado pelo usuário.\n";
@@ -302,6 +151,9 @@ function conectarSite($site, &$erro = null) {
 // =====================================================================
 function perguntarSimNao($mensagem) {
     echo $mensagem;
+    if (function_exists('replicar_web_resposta')) {
+        return strtolower(replicar_web_resposta(trim($mensagem))) === 's';
+    }
     $stdin = fopen('php://stdin', 'r');
     $resp  = trim(fgets($stdin));
     fclose($stdin);

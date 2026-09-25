@@ -8,6 +8,10 @@ if (!defined('STDIN')) {
 function prompt($msg)
 {
     echo $msg . "\n";
+    // Versão web do servidor (web/): a página responde as perguntas, não tem terminal
+    if (function_exists('replicar_web_resposta')) {
+        return replicar_web_resposta($msg);
+    }
     ob_flush();
     $in = trim(fgets(STDIN));
     return $in;
@@ -134,107 +138,30 @@ function copiarDiretorioLocal($origem, $destino, $nome_pasta, $flag, $servidor_r
     replicar::copiarDiretorio($origem, $destino, $nome_pasta, $flag);
 }
 
+// Lista de sites: vem do sites.json (mesma pasta deste arquivo) - é a mesma lista usada pela versão web
+// e pelo replicar_bd.php. Pode ser editada na tela "Sites" da versão web ou direto no arquivo.
+// Aqui só entram os sites ativos que têm a parte "arquivos" (envio por FTP/SFTP).
+// No servidor do Ricardo ele fica em ~/.replicar/sites.json, fora do public_html: lá os arquivos
+// da pasta replicar podem ser baixados pelo navegador, e o sites.json tem as senhas.
+// Aqui no servidor a lista fica em .sites.json (nome com ponto: o site não deixa baixar pela web)
+$arquivo_sites = __DIR__ . "/sites.json";
+if (!file_exists($arquivo_sites)) {
+    $arquivo_sites = __DIR__ . "/.sites.json";
+}
+if (!file_exists($arquivo_sites) && getenv("HOME")) {
+    $arquivo_sites = getenv("HOME") . "/.replicar/sites.json";
+}
+$config_sites = json_decode((string) @file_get_contents($arquivo_sites), true);
+if (!is_array($config_sites) || !isset($config_sites["sites"]) || !is_array($config_sites["sites"])) {
+    echo "Não foi possível ler a lista de sites em " . $arquivo_sites . "\n";
+    exit();
+}
 $sites = array();
-
-$sites[] = array(
-    "Nome" => "Ecorio",
-    "alias" => "ecorio",
-    "ftp_host" => "vps4.nuneshost.com",
-    "ftp_user_login" => "ecorioonline",
-    "ftp_pass" => "3Caras&1Fera#",
-    "ftp_pasta_do_site" => "site-novo-erro",
-);
-
-$sites[] = array(
-    "Nome" => "Grupo Seal - Neto",
-    "alias" => "gseal",
-    "ftp_host" => "ftp.gruposeal.com.br",
-    "ftp_user_login" => "gruposea",
-    "ftp_pass" => "Se042022Ma072023",
-    "ftp_pasta_do_site" => "site",
-);
-
-$sites[] = array(
-    "Nome" => "Grupo New Smart",
-    "alias" => "gnewsmart",
-    "ftp_host" => "vps4.nuneshost.com",
-    "ftp_user_login" => "gruponewsmart",
-    "ftp_pass" => "3Caras&1Fera#",
-    "ftp_pasta_do_site" => "site",
-);
-
-$sites[] = array(
-    "Nome" => "Fibrolar",
-    "alias" => "fibrolar",
-    "ftp_host" => "vps4.nuneshost.com",
-    "ftp_user_login" => "fibrolar",
-    "ftp_pass" => "3Caras&1Fera#",
-    "ftp_pasta_do_site" => "site",
-);
-
-$sites[] = array(
-    "Nome" => "Limptek",
-    "alias" => "limptek",
-    "ftp_host" => "vps4.nuneshost.com",
-    "ftp_user_login" => "pastalimptek",
-    "ftp_pass" => "3Caras&1Fera#",
-    "ftp_pasta_do_site" => "site",
-);
-
-$sites[] = array(
-    "Nome" => "Golf",
-    "alias" => "golf",
-    "ftp_host" => "100.96.10.71",
-    "ftp_user_login" => "ricardo",
-    "ftp_pass" => "2209",
-    "ftp_pasta_do_site" => "golf",
-    "desenv" => 1,
-    "sftp" => 1,
-);
-
-$sites[] = array(
-    "Nome" => "Golf Plesk",
-    "alias" => "golf",
-    "ftp_host" => "vps4.nuneshost.com",
-    "ftp_user_login" => "teregolf",
-    "ftp_pass" => "Que#de4senha26br",
-    "ftp_pasta_do_site" => "site",
-    "desenv" => 0,
-    "sftp" => 0,
-);
-
-$sites[] = array(
-    "Nome" => "Bay - Dev Ricardo",
-    "alias" => "bay",
-    "ftp_host" => "100.96.10.71",
-    "ftp_user_login" => "ricardo",
-    "ftp_pass" => "2209",
-    "ftp_pasta_do_site" => "bay",
-    "desenv" => 1,
-    "sftp" => 1,
-);
-
-$sites[] = array(
-    "Nome" => "Newsmart - Dev Ricardo",
-    "alias" => "newsmart",
-    "ftp_host" => "100.96.10.71",
-    "ftp_user_login" => "ricardo",
-    "ftp_pass" => "2209",
-    "ftp_pasta_do_site" => "newsmart",
-    "desenv" => 1,
-    "sftp" => 1,
-);
-
-$sites[] = array(
-    "Nome" => "Casa de Portugal - Dev Ricardo",
-    "alias" => "portugal",
-    "ftp_host" => "100.96.10.71",
-    "ftp_user_login" => "ricardo",
-    "ftp_pass" => "2209",
-    "ftp_pasta_do_site" => "portugal",
-    "desenv" => 1,
-    "sftp" => 1,
-);
+foreach ($config_sites["sites"] as $s) {
+    if (!empty($s["ativo"]) && !empty($s["arquivos"])) {
+        $sites[] = array_merge($s["arquivos"], array("id" => $s["id"], "nome" => $s["nome"]));
+    }
+}
 
 $excessao = array(
     "custom.css",
@@ -385,712 +312,217 @@ if (strtolower($cont) == "s") {
 }
 echo "Continuando...\n";
 
-if ($tipo == "vendas antigo") {
-    $ecorio_resp = "";
-    while (strtolower($ecorio_resp) != "s" && strtolower($ecorio_resp) != "n") {
-        $ecorio_resp = prompt("Deseja atualizar a Ecorio site antigo?");
-    }
-    if (strtolower($ecorio_resp) == "s") {
-        if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-            $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-            $pasta_ftp = "/httpdocs/site/" . $pastas_ftp_meio . $dir . "/" . $nome_pasta;
-            echo "Enviando a pasta inteira " . $nome_pasta . " ao FTP...\n";
-            replicar::enviarPastaAoFTP("vps4.nuneshost.com", "ecorioonline", "3Caras&1Fera#", $mydir . "/" . $nome_pasta, $pasta_ftp, $mydir);
-            while (strtolower($ecorio_resp2) != "s" && strtolower($ecorio_resp) != "n") {
-                $ecorio_resp2 = prompt("Deseja atualizar a Ecorio site antigo no Dev Ricardo?");
-                if (strtolower($ecorio_resp) == "s") {
-
-                } else {
-                    echo "Ok pulando Ecorio site antigo no Dev Ricardo";
-                }
-            }
-        } else {
-            replicar::enviarArquivoAoFTP("vps4.nuneshost.com", "ecorioonline", "3Caras&1Fera#", $mydir, "/httpdocs/site/" . $pastas_ftp_meio . $dir, $nome_arquivo, null, $mydir);
-            while (strtolower($ecorio_resp2) != "s" && strtolower($ecorio_resp) != "n") {
-               $ecorio_resp2 = prompt("Deseja atualizar a Ecorio site antigo no Dev Ricardo?");
-               if (strtolower($ecorio_resp) == "s") {
-
-                } else {
-                    echo "Ok pulando Ecorio site antigo no Dev Ricardo";
-                }
-            }
-        }
-    }
-    echo "Replicacao de vendas antigo terminada!";
-    exit();
+function eh_pasta($nome_arquivo)
+{
+    return strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false;
 }
 
-$sacos_teste = "";
-while (strtolower($sacos_teste) != "s" && strtolower($sacos_teste) != "n") {
-    $sacos_teste = prompt("Deseja atualizar a Sacos Teste?");
+function nome_da_pasta($nome_arquivo)
+{
+    return str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
 }
-if ($excessao_alguns) {
+
+function perguntar_sn($msg)
+{
+    $resp = "";
+    while (strtolower($resp) != "s" && strtolower($resp) != "n") {
+        $resp = prompt($msg);
+    }
+    return strtolower($resp) == "s";
+}
+
+// O arquivo está na lista de exceções pra esse site?
+function site_na_excecao($site, $pesq, $tipo)
+{
+    global $excessao_alguns, $excessao_exclusiva;
+
+    if (!empty($site["ignorar_excecoes"])) {
+        return false;
+    }
+    $bloqueado = false;
     foreach ($excessao_alguns as $exc) {
         if (strpos($pesq, $exc) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para a Sacos\n";
-            $sacos_teste = "n";
+            $bloqueado = true;
         }
     }
-}
-if (!empty($excessao_exclusiva[$tipo]["sacos"])) {
-    foreach ($excessao_exclusiva[$tipo]["sacos"] as $exc_exclusiva) {
-        if (strpos($pesq, $exc_exclusiva) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para a Sacos\n";
-            $sacos_teste = "n";
-        }
-    }
-}
-if (strtolower($sacos_teste) == "s") {
-    if ($dir_meio != "Sacos Bay Plastic" && file_exists($mydir . "/" . $nome_arquivo)) {
-        copiarArquivoLocal($mydir . "/" . $nome_arquivo, $plat . "/Sacos Bay Plastic/" . $ano . "/" . $dir . "/", $nome_arquivo, $servidor_ricardo);
-    } else {
-        if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-            $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-            $src = $mydir . "/" . $nome_pasta;
-            $dst = $plat . "/Sacos Bay Plastic/" . $ano . "/" . $dir . "/" . $nome_pasta;
-            copiarDiretorioLocal($src, $dst, $nome_pasta, 1, $servidor_ricardo);
-        } else {
-            echo "O arquivo " . $nome_arquivo . " nao foi copiado pra Sacos.\n";
-        }
-    }
-    if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-        $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-        $pasta_ftp = "/httpdocs/teste$$$/" . $pastas_ftp_meio . $dir . "/" . $nome_pasta;
-        echo "Enviando a pasta inteira " . $nome_pasta . " ao FTP...\n";
-        replicar::enviarPastaAoFTP("vps4.nuneshost.com", "sacosbayplastic", "3Caras&1Fera#", $mydir . "/" . $nome_pasta, $pasta_ftp, $mydir);
-    } else {
-        replicar::enviarArquivoAoFTP("vps4.nuneshost.com", "sacosbayplastic", "3Caras&1Fera#", $mydir, "/httpdocs/teste$$$/" . $pastas_ftp_meio . $dir, $nome_arquivo, null, $mydir);
-    }
-}
-
-echo "\n\nSacos\n";
-$sacos_site = "";
-while (strtolower($sacos_site) != "s" && strtolower($sacos_site) != "n") {
-    $sacos_site = prompt("Deseja atualizar a Sacos Site?");
-}
-if ($excessao_alguns) {
-    foreach ($excessao_alguns as $exc) {
-        if (strpos($pesq, $exc) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para a Sacos\n";
-            $sacos_site = "n";
-        }
-    }
-}
-if (!empty($excessao_exclusiva[$tipo]["sacos"])) {
-    foreach ($excessao_exclusiva[$tipo]["sacos"] as $exc_exclusiva) {
-        if (strpos($pesq, $exc_exclusiva) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para a Sacos\n";
-            $sacos_site = "n";
-        }
-    }
-}
-if (strtolower($sacos_site) == "s") {
-    if ($dir_meio != "Sacos Bay Plastic" && file_exists($mydir . "/" . $nome_arquivo)) {
-        copiarArquivoLocal($mydir . "/" . $nome_arquivo, $plat . "/Sacos Bay Plastic/" . $ano . "/" . $dir . "/", $nome_arquivo, $servidor_ricardo);
-    } else {
-        if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-            $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-            $src = $mydir . "/" . $nome_pasta;
-            $dst = $plat . "/Sacos Bay Plastic/" . $ano . "/" . $dir . "/" . $nome_pasta;
-            copiarDiretorioLocal($src, $dst, $nome_pasta, 1, $servidor_ricardo);
-        } else {
-            echo "O arquivo " . $nome_arquivo . " nao foi copiado pra Sacos.\n";
-        }
-    }
-    if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-        $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-        $pasta_ftp = "/httpdocs/site/" . $pastas_ftp_meio . $dir . "/" . $nome_pasta;
-        echo "Enviando a pasta inteira " . $nome_pasta . " ao FTP...\n";
-        replicar::enviarPastaAoFTP("vps4.nuneshost.com", "sacosbayplastic", "3Caras&1Fera#", $mydir . "/" . $nome_pasta, $pasta_ftp, $mydir);
-    } else {
-        replicar::enviarArquivoAoFTP("vps4.nuneshost.com", "sacosbayplastic", "3Caras&1Fera#", $mydir, "/httpdocs/site/" . $pastas_ftp_meio . $dir, $nome_arquivo, null, $mydir);
-    }
-}
-
-echo "\n\nComary\n";
-$comary = "";
-while (strtolower($comary) != "s" && strtolower($comary) != "n") {
-    $comary = prompt("Deseja atualizar o Comary?");
-}
-if ($excessao_alguns) {
-    foreach ($excessao_alguns as $exc) {
-        if (strpos($pesq, $exc) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para o Comary\n";
-            $comary = "n";
-        }
-    }
-}
-if (!empty($excessao_exclusiva[$tipo]["comary"])) {
-    foreach ($excessao_exclusiva[$tipo]["comary"] as $exc_exclusiva) {
-        if (strpos($pesq, $exc_exclusiva) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para o Comary\n";
-            $comary = "n";
-        }
-    }
-}
-if (strtolower($comary) == "s") {
-    if ($dir_meio != "Clube Comary" && file_exists($mydir . "/" . $nome_arquivo)) {
-        copiarArquivoLocal($mydir . "/" . $nome_arquivo, $plat . "/Clube Comary/" . $ano . "/" . $dir . "/", $nome_arquivo, $servidor_ricardo);
-    } else {
-        if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-            $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-            $src = $mydir . "/" . $nome_pasta;
-            $dst = $plat . "/Clube Comary/" . $ano . "/" . $dir . "/" . $nome_pasta;
-            copiarDiretorioLocal($src, $dst, $nome_pasta, 1, $servidor_ricardo);
-        } else {
-            echo "O arquivo " . $nome_arquivo . " nao foi copiado pro Comary.\n";
-        }
-    }
-    if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-        $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-        $pasta_ftp = "/httpdocs/site/" . $pastas_ftp_meio . $dir . "/" . $nome_pasta;
-        echo "Enviando a pasta inteira " . $nome_pasta . " ao FTP...\n";
-        replicar::enviarPastaAoFTP("vps4.nuneshost.com", "clubecomary", "3Caras&1Fera#", $mydir . "/" . $nome_pasta, $pasta_ftp, $mydir);
-    } else {
-        replicar::enviarArquivoAoFTP("vps4.nuneshost.com", "clubecomary", "3Caras&1Fera#", $mydir, "/httpdocs/site/" . $pastas_ftp_meio . $dir, $nome_arquivo, null, $mydir);
-    }
-}
-
-echo "\n\nIfen\n";
-$ifen = "";
-while (strtolower($ifen) != "s" && strtolower($ifen) != "n") {
-    $ifen = prompt("Deseja atualizar o Edições IFEN?");
-}
-if ($excessao_alguns) {
-    foreach ($excessao_alguns as $exc) {
-        if (strpos($pesq, $exc) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para o Edições IFen\n";
-            $ifen = "n";
-        }
-    }
-}
-if (!empty($excessao_exclusiva[$tipo]["ifen"])) {
-    foreach ($excessao_exclusiva[$tipo]["ifen"] as $exc_exclusiva) {
-        if (strpos($pesq, $exc_exclusiva) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para o IFEN\n";
-            $ifen = "n";
-        }
-    }
-}
-if (strtolower($ifen) == "s") {
-    if ($dir_meio != "IFEN" && file_exists($mydir . "/" . $nome_arquivo)) {
-        copiarArquivoLocal($mydir . "/" . $nome_arquivo, $plat . "/IFEN/" . $ano . "/" . $dir . "/", $nome_arquivo, $servidor_ricardo);
-    } else {
-        if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-            $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-            $src = $mydir . "/" . $nome_pasta;
-            $dst = $plat . "/IFEN/" . $ano . "/" . $dir . "/" . $nome_pasta;
-            copiarDiretorioLocal($src, $dst, $nome_pasta, 1, $servidor_ricardo);
-        } else {
-            echo "O arquivo " . $nome_arquivo . " nao foi copiado pro IFEN.\n";
-        }
-    }
-    if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-        $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-        $pasta_ftp = "/httpdocs/" . $pastas_ftp_meio . $dir . "/" . $nome_pasta;
-        echo "Enviando a pasta inteira " . $nome_pasta . " ao FTP...\n";
-        replicar::enviarPastaAoFTP("vps4.nuneshost.com", "edicoesifen", "3Caras&1Fera#", $mydir . "/" . $nome_pasta, $pasta_ftp, $mydir);
-    } else {
-        replicar::enviarArquivoAoFTP("vps4.nuneshost.com", "edicoesifen", "3Caras&1Fera#", $mydir, "/httpdocs/" . $pastas_ftp_meio . $dir, $nome_arquivo, null, $mydir);
-    }
-}
-
-echo "\n\nCEERJ\n";
-$ceerj = "";
-while (strtolower($ceerj) != "s" && strtolower($ceerj) != "n") {
-    $ceerj = prompt("Deseja atualizar o CEERJ?");
-}
-if (!empty($excessao_exclusiva[$tipo]["ceerj"])) {
-    foreach ($excessao_exclusiva[$tipo]["ceerj"] as $exc_exclusiva) {
-        if (strpos($pesq, $exc_exclusiva) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para o CEERJ\n";
-            $ceerj = "n";
-        }
-    }
-}
-if ($excessao_alguns) {
-    foreach ($excessao_alguns as $exc) {
-        if (strpos($pesq, $exc) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para o CEERJ\n";
-            $ceerj = "n";
-        }
-    }
-}
-if (strtolower($ceerj) == "s") {
-    if ($dir_meio != "CEERJ" && file_exists($mydir . "/" . $nome_arquivo)) {
-        copiarArquivoLocal($mydir . "/" . $nome_arquivo, $plat . "/CEERJ/" . $ano . "/" . $dir . "/", $nome_arquivo, $servidor_ricardo);
-    } else {
-        if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-            $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-            $src = $mydir . "/" . $nome_pasta;
-            $dst = $plat . "/CEERJ/" . $ano . "/" . $dir . "/" . $nome_pasta;
-            copiarDiretorioLocal($src, $dst, $nome_pasta, 1, $servidor_ricardo);
-        } else {
-            echo "O arquivo " . $nome_arquivo . " nao foi copiado pro CEERJ.\n";
-        }
-    }
-    if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-        $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-        $pasta_ftp = "/httpdocs/portal/" . $pastas_ftp_meio . $dir . "/" . $nome_pasta;
-        echo "Enviando a pasta inteira " . $nome_pasta . " ao FTP...\n";
-        replicar::enviarPastaAoFTP("vps4.nuneshost.com", "ceerj", "3Caras&1Fera#", $mydir . "/" . $nome_pasta, $pasta_ftp, $mydir);
-    } else {
-        replicar::enviarArquivoAoFTP("vps4.nuneshost.com", "ceerj", "3Caras&1Fera#", $mydir, "/httpdocs/portal/" . $pastas_ftp_meio . $dir, $nome_arquivo, null, $mydir);
-    }
-}
-
-echo "\n\nAequor\n";
-$aequor = "";
-while (strtolower($aequor) != "s" && strtolower($aequor) != "n") {
-    $aequor = prompt("Deseja atualizar o Aequor?");
-}
-if ($excessao_alguns) {
-    foreach ($excessao_alguns as $exc) {
-        if (strpos($pesq, $exc) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para o Aequor\n";
-            $aequor = "n";
-        }
-    }
-}
-if (!empty($excessao_exclusiva[$tipo]["aequor"])) {
-    foreach ($excessao_exclusiva[$tipo]["aequor"] as $exc_exclusiva) {
-        if (strpos($pesq, $exc_exclusiva) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para a Aequor\n";
-            $aequor = "n";
-        }
-    }
-}
-if (strtolower($aequor) == "s") {
-    if ($dir_meio != "Aequor" && file_exists($mydir . "/" . $nome_arquivo)) {
-        copiarArquivoLocal($mydir . "/" . $nome_arquivo, $plat . "/Aequor/" . $ano . "/" . $dir . "/", $nome_arquivo, $servidor_ricardo);
-    } else {
-        if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-            $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-            $src = $mydir . "/" . $nome_pasta;
-            $dst = $plat . "/Aequor/" . $ano . "/" . $dir . "/" . $nome_pasta;
-            copiarDiretorioLocal($src, $dst, $nome_pasta, 1, $servidor_ricardo);
-        } else {
-            echo "O arquivo " . $nome_arquivo . " nao foi copiado pra Aequor.\n";
-        }
-    }
-    if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-        $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-        $pasta_ftp = "/httpdocs/site/" . $pastas_ftp_meio . $dir . "/" . $nome_pasta;
-        echo "Enviando a pasta inteira " . $nome_pasta . " ao FTP...\n";
-        replicar::enviarPastaAoFTP("vps4.nuneshost.com", "aequor", "3Caras&1Fera#", $mydir . "/" . $nome_pasta, $pasta_ftp, $mydir);
-    } else {
-        replicar::enviarArquivoAoFTP("vps4.nuneshost.com", "aequor", "3Caras&1Fera#", $mydir, "/httpdocs/site/" . $pastas_ftp_meio . $dir, $nome_arquivo, null, $mydir);
-    }
-}
-
-echo "\n\nSistema\n";
-$sistema = "";
-while (strtolower($sistema) != "s" && strtolower($sistema) != "n") {
-    $sistema = prompt("Deseja atualizar o Sistema?");
-}
-
-$dir = extrairDirRelativo($mydir, $ano, $servidor_ricardo);
-
-if (strpos($dir, "adm/com_virtuemart") !== false) {
-    $tipo = "virtuemart";
-    $retirar = substr($dir . 'com_virtuemart', 0, strpos($dir, 'com_virtuemart'));
-    $dir = str_replace($retirar, "", $dir);
-    $ano = "Modificações/adm";
-}
-if (strpos($dir, "com_virtuemart") !== false) {
-    $tipo = "virtuemart";
-    $retirar = substr($dir . 'com_virtuemart', 0, strpos($dir, 'com_virtuemart'));
-    $dir = str_replace($retirar, "", $dir);
-}
-if (strpos($dir, "virtuemart_front") !== false) {
-    $pastas_ftp_meio = "components/";
-    $tipo = "virtuemart_front";
-    $pos = strpos($dir, 'virtuemart_front');
-    $resto = substr($dir, $pos + strlen('virtuemart_front'));
-    $dir = 'com_virtuemart' . $resto;
-}
-
-if (strtolower($sistema) == "s") {
-    if (file_exists($mydir . "/" . $nome_arquivo)) {
-        if (strpos($mydir, 'nvoice') !== false) {
-            $tipo = "vendas";
-            $caminho = "Vendas/VM Invoice 3";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_vminvoice3", "Vm Invoice3", $dir);
-        } else if (strpos($mydir, 'ompra') !== false) {
-            $tipo = "compras";
-            $caminho = "Compras/VM Compra 3";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_vmcompra3", "Vm Compra3", $dir);
-        } else if (strpos($mydir, 'inancas') !== false) {
-            $tipo = "financas";
-            $caminho = "AS Finanças/As Finanças 3";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_asfinancas", "admin", $dir);
-        } else if (strpos($mydir, 'comissao') !== false) {
-            $tipo = "comissao";
-            $caminho = "AS Comissao/AS Comissao3/com_comissao";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_comissao", "admin", $dir);
-        } else if (strpos($mydir, 'relatorios') !== false) {
-            $tipo = "relatorios";
-            $caminho = "AS Relatorios/AS Relatorios 3/com_asrelatorios";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_asrelatorios", "admin", $dir);
-        } else if (strpos($mydir, 'servicos') !== false) {
-            $tipo = "servicos";
-            $caminho = "VM Servicos/admin";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_vmservicos/", "", $dir);
-        } else if (strpos($mydir, 'virtuemart_front') !== false) {
-            $tipo = "virtuemart_front";
-            $caminho = "Site com sistema para instalação/Site Completo/" . $pastas_ftp_meio;
-            $pasta_ftp = $dir;
-        } else if (strpos($mydir, 'virtuemart') !== false) {
-            $tipo = "virtuemart";
-            $caminho = "Site com sistema para instalação/Site Completo/" . $pastas_ftp_meio;
-            $pasta_ftp = $dir;
-        }
-
-        if (!empty($win)) {
-            $plat = "D:";
-        } else if (!empty($linux)) {
-            $plat = "/media/daniel_alves/Novo volume";
-        }
-
-        if (strpos($mydir, 'Sistema') === false && $jacopiei == 0) {
-            copiarArquivoLocal($mydir . "/" . $nome_arquivo, $plat . "/Sistema/" . $caminho . "/" . $dir . "/", $nome_arquivo, $servidor_ricardo);
-            $jacopiei = 1;
-        } else {
-            if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-                $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-                $src = $mydir . "/" . $nome_pasta;
-                $dst = $plat . "/Sistema/" . $caminho . "/" . $dir . "/" . $nome_pasta;
-                copiarDiretorioLocal($src, $dst, $nome_pasta, 1, $servidor_ricardo);
-                $jacopiei = 1;
-            } else {
-                echo "O arquivo " . $nome_arquivo . " nao foi copiado para a pasta de sistema.\n";
-            }
-        }
-    }
-    if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-        $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-        $pasta_ftp = "/httpdocs/sistema/" . $pastas_ftp_meio . $dir . "/" . $nome_pasta;
-        echo "Enviando a pasta inteira " . $nome_pasta . " ao FTP...\n";
-        replicar::enviarPastaAoFTP("vps4.nuneshost.com", "grupointernet", "3Caras&1Fera#", $mydir . "/" . $nome_pasta, $pasta_ftp, $mydir);
-    } else {
-        replicar::enviarArquivoAoFTP("vps4.nuneshost.com", "grupointernet", "3Caras&1Fera#", $mydir, "/httpdocs/sistema/" . $pastas_ftp_meio . $pasta_ftp, $nome_arquivo, null, $mydir);
-    }
-}
-
-echo "\n\nSolução Multi\n";
-if (!empty($excessao_exclusiva[$tipo]["solucao"])) {
-    foreach ($excessao_exclusiva[$tipo]["solucao"] as $exc_exclusiva) {
-        if (strpos($pesq, $exc_exclusiva) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para o Solucao\n";
-            $solucao = "n";
-            $sistema = "n";
-        }
-    }
-}
-
-$dir = extrairDirRelativo($mydir, $ano, $servidor_ricardo);
-
-if (strtolower($sistema) == "s") {
-    if (file_exists($mydir . "/" . $nome_arquivo)) {
-        if (strpos($mydir, 'vminvoice') !== false) {
-            $tipo = "vendas";
-            $caminho = "Vendas/VM Invoice 3";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_vminvoice3", "Vm Invoice3", $dir);
-        } else if (strpos($mydir, 'ompra') !== false) {
-            $tipo = "compras";
-            $caminho = "Compras/VM Compra 3";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_vmcompra3", "Vm Compra3", $dir);
-        } else if (strpos($mydir, 'inancas') !== false) {
-            $tipo = "financas";
-            $caminho = "AS Finanças/As Finanças 3";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_asfinancas", "admin", $dir);
-        } else if (strpos($mydir, 'comissao') !== false) {
-            $tipo = "comissao";
-            $caminho = "AS Comissao/AS Comissao3/com_comissao";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_comissao", "admin", $dir);
-        } else if (strpos($mydir, 'relatorios') !== false) {
-            $tipo = "relatorios";
-            $caminho = "AS Relatorios/AS Relatorios 3/com_asrelatorios";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_asrelatorios", "admin", $dir);
-        } else if (strpos($mydir, 'virtuemart_front') !== false) {
-            $tipo = "virtuemart_front";
-            $caminho = "Site com sistema para instalação/Site Completo/" . $pastas_ftp_meio;
-            $pasta_ftp = str_replace("virtuemart_front", "com_virtuemart", $dir);
-        } else if (strpos($mydir, 'virtuemart') !== false) {
-            $tipo = "virtuemart";
-            $caminho = "Site com sistema para instalação/Site Completo/" . $pastas_ftp_meio;
-            $pasta_ftp = $dir;
-        }
-
-        if (strpos($mydir, 'Sistema') === false && $jacopiei == 0) {
-            copiarArquivoLocal($mydir . "/" . $nome_arquivo, $plat . "/Sistema/" . $caminho . "/" . $dir . "/", $nome_arquivo, $servidor_ricardo);
-            $jacopiei = 1;
-        } else {
-            if ($jacopiei) {
-                echo "O arquivo ou pasta " . $nome_arquivo . " já havia sido copiado para a pasta de sistema.\n";
-            } else {
-                if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-                    $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-                    $src = $mydir . "/" . $nome_pasta;
-                    $dst = $plat . "/Sistema/" . $caminho . "/" . $dir . "/" . $nome_pasta;
-                    copiarDiretorioLocal($src, $dst, $nome_pasta, 1, $servidor_ricardo);
-                    $jacopiei = 1;
-                } else {
-                    echo "O arquivo " . $nome_arquivo . " nao foi copiado para a pasta de sistema.\n";
-                }
-            }
-        }
-    }
-    if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-        $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-        $pasta_ftp = "/httpdocs/solucaom-fora/" . $pastas_ftp_meio . $dir . "/" . $nome_pasta;
-        echo "Enviando a pasta inteira " . $nome_pasta . " ao FTP...\n";
-        replicar::enviarPastaAoFTP("vps4.nuneshost.com", "grupointernet", "3Caras&1Fera#", $mydir . "/" . $nome_pasta, $pasta_ftp, $mydir);
-    } else {
-        replicar::enviarArquivoAoFTP("vps4.nuneshost.com", "grupointernet", "3Caras&1Fera#", $mydir, "/httpdocs/solucaom-fora/" . $pastas_ftp_meio . $pasta_ftp, $nome_arquivo, null, $mydir);
-    }
-}
-if ($solucao == "n") {
-    $sistema = "s";
-}
-
-echo "\n\nNSMart\n";
-$nsmart = "";
-if ($excessao_alguns) {
-    foreach ($excessao_alguns as $exc) {
-        if (strpos($pesq, $exc) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para o NSMart\n";
-            $sistema = "n";
-            $nsmart = "n";
-        }
-    }
-}
-if (!empty($excessao_exclusiva[$tipo]["nsmart"])) {
-    foreach ($excessao_exclusiva[$tipo]["nsmart"] as $exc_exclusiva) {
-        if (strpos($pesq, $exc_exclusiva) !== false) {
-            echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para o NSmart\n";
-            $sistema = "n";
-            $nsmart = "n";
-        }
-    }
-}
-$dir = extrairDirRelativo($mydir, $ano, $servidor_ricardo);
-
-if (strtolower($sistema) == "s") {
-    if (file_exists($mydir . "/" . $nome_arquivo)) {
-        if (strpos($mydir, 'vminvoice') !== false) {
-            $tipo = "vendas";
-            $caminho = "Vendas/VM Invoice 3";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_vminvoice3", "Vm Invoice3", $dir);
-        } else if (strpos($mydir, 'ompra') !== false) {
-            $tipo = "compras";
-            $caminho = "Compras/VM Compra 3";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_vmcompra3", "Vm Compra3", $dir);
-        } else if (strpos($mydir, 'inancas') !== false) {
-            $tipo = "financas";
-            $caminho = "AS Finanças/As Finanças 3";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_asfinancas", "admin", $dir);
-        } else if (strpos($mydir, 'comissao') !== false) {
-            $tipo = "comissao";
-            $caminho = "AS Comissao/AS Comissao3/com_comissao";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_comissao", "admin", $dir);
-        } else if (strpos($mydir, 'relatorios') !== false) {
-            $tipo = "relatorios";
-            $caminho = "AS Relatorios/AS Relatorios 3/com_asrelatorios";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_asrelatorios", "admin", $dir);
-        } else if (strpos($mydir, 'servicos') !== false) {
-            $tipo = "servicos";
-            $caminho = "VM Servicos/admin";
-            $pasta_ftp = $dir;
-            $dir = str_replace("com_vmservicos/", "", $dir);
-        } else if (strpos($mydir, 'virtuemart_front') !== false) {
-            $tipo = "virtuemart_front";
-            $caminho = "Site com sistema para instalação/Site Completo/" . $pastas_ftp_meio;
-            $pasta_ftp = str_replace("virtuemart_front", "com_virtuemart", $dir);
-        } else if (strpos($mydir, 'virtuemart') !== false) {
-            $tipo = "virtuemart";
-            $caminho = "Site com sistema para instalação/Site Completo/" . $pastas_ftp_meio;
-            $pasta_ftp = $dir;
-        }
-        if (strpos($mydir, 'Sistema') === false && $jacopiei == 0) {
-            copiarArquivoLocal($mydir . "/" . $nome_arquivo, $plat . "/Sistema/" . $caminho . "/" . $dir . "/", $nome_arquivo, $servidor_ricardo);
-            $jacopiei = 1;
-        } else {
-            if ($jacopiei) {
-                echo "O arquivo ou pasta " . $nome_arquivo . " já havia sido copiado para a pasta de sistema.\n";
-            } else {
-                if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-                    $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-                    $src = $mydir . "/" . $nome_pasta;
-                    $dst = $plat . "/Sistema/" . $caminho . "/" . $dir . "/" . $nome_pasta;
-                    copiarDiretorioLocal($src, $dst, $nome_pasta, 1, $servidor_ricardo);
-                    $jacopiei = 1;
-                } else {
-                    echo "O arquivo " . $nome_arquivo . " nao foi copiado para a pasta de sistema.\n";
-                }
-            }
-        }
-    }
-    if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-        $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-        $pasta_ftp = "/httpdocs/site/" . $pastas_ftp_meio . $dir . "/" . $nome_pasta;
-        echo "Enviando a pasta inteira " . $nome_pasta . " ao FTP...\n";
-        replicar::enviarPastaAoFTP("vps4.nuneshost.com", "nsmart", "3Caras&1Fera#", $mydir . "/" . $nome_pasta, $pasta_ftp, $mydir);
-    } else {
-        replicar::enviarArquivoAoFTP("vps4.nuneshost.com", "nsmart", "3Caras&1Fera#", $mydir, "/httpdocs/site/" . $pastas_ftp_meio . $pasta_ftp, $nome_arquivo, null, $mydir);
-    }
-}
-if ($nsmart == "n") {
-    $sistema = "s";
-}
-
-$sistema_temp = $sistema;
-foreach ($sites as $site) {
-    echo "\n\n" . $site["Nome"] . "\n";
-    $sitevar = "";
-    $sistema = $sistema_temp;
-
-    if (!empty($site["desenv"])) {
-        $sitevar = "";
-        while (strtolower($sitevar) != "s" && strtolower($sitevar) != "n") {
-            $sitevar = prompt("Deseja atualizar o " . $site["Nome"] . "?");
-            $sistema = "s";
-        }
-        if (strtolower($sitevar) != "s") {
-            continue;
-        }
-    }
-
-    if ($excessao_alguns) {
-        foreach ($excessao_alguns as $exc) {
-            if (strpos($pesq, $exc) !== false) {
-                echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para o " . $site["Nome"] . "\n";
-                $sistema = "n";
-                $pausa = "s";
-            }
-        }
-    }
-    if (!empty($excessao_exclusiva[$tipo][$site["alias"]])) {
-        foreach ($excessao_exclusiva[$tipo][$site["alias"]] as $exc_exclusiva) {
+    $alias = isset($site["alias"]) ? $site["alias"] : "";
+    if ($alias !== "" && !empty($excessao_exclusiva[$tipo][$alias])) {
+        foreach ($excessao_exclusiva[$tipo][$alias] as $exc_exclusiva) {
             if (strpos($pesq, $exc_exclusiva) !== false) {
-                echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para o " . $site["Nome"] . "\n";
-                $sistema = "n";
-                $pausa = "s";
+                $bloqueado = true;
             }
         }
     }
+    if ($bloqueado) {
+        echo "Arquivo na Excessão! Não é possível replicar o arquivo " . $pesq . " para o " . $site["nome"] . "\n";
+    }
+    return $bloqueado;
+}
 
-    $dir = extrairDirRelativo($mydir, $ano, $servidor_ricardo);
+// Envia o arquivo (ou a pasta inteira, com "pasta=") pro site, por FTP ou SFTP
+function enviar_ao_site($site, $pasta_remota_arquivo, $pasta_remota_pasta)
+{
+    global $mydir, $nome_arquivo;
 
-    if (strtolower($sistema) == "s") {
-        if (file_exists($mydir . "/" . $nome_arquivo)) {
-            if (strpos($mydir, 'vminvoice') !== false) {
-                $tipo = "vendas";
-                $caminho = "Vendas/VM Invoice 3";
-                $pasta_ftp = $dir;
-                $dir = str_replace("com_vminvoice3", "Vm Invoice3", $dir);
-            } elseif (strpos($mydir, 'ompra') !== false) {
-                $tipo = "compras";
-                $caminho = "Compras/VM Compra 3";
-                $pasta_ftp = $dir;
-                $dir = str_replace("com_vmcompra3", "Vm Compra3", $dir);
-            } elseif (strpos($mydir, 'inancas') !== false) {
-                $tipo = "financas";
-                $caminho = "AS Finanças/As Finanças 3";
-                $pasta_ftp = $dir;
-                $dir = str_replace("com_asfinancas", "admin", $dir);
-            } elseif (strpos($mydir, 'comissao') !== false) {
-                $tipo = "comissao";
-                $caminho = "AS Comissao/AS Comissao3/com_comissao";
-                $pasta_ftp = $dir;
-                $dir = str_replace("com_comissao", "admin", $dir);
-            } elseif (strpos($mydir, 'relatorios') !== false) {
-                $tipo = "relatorios";
-                $caminho = "AS Relatorios/AS Relatorios 3/com_asrelatorios";
-                $pasta_ftp = $dir;
-                $dir = str_replace("com_asrelatorios", "admin", $dir);
-            } else if (strpos($mydir, 'servicos') !== false) {
-                $tipo = "servicos";
-                $caminho = "VM Servicos/admin";
-                $pasta_ftp = $dir;
-                $dir = str_replace("com_vmservicos/", "", $dir);
-            } else if (strpos($mydir, 'virtuemart_front') !== false) {
-                $tipo = "virtuemart_front";
-                $caminho = "Site com sistema para instalação/Site Completo/" . $pastas_ftp_meio;
-                $pasta_ftp = str_replace("virtuemart_front", "com_virtuemart", $dir);
-            } else if (strpos($mydir, 'virtuemart') !== false) {
-                $tipo = "virtuemart";
-                $caminho = "Site com sistema para instalação/Site Completo/" . $pastas_ftp_meio;
-                $pasta_ftp = $dir;
-            }
-
-            if (strpos($mydir, 'Sistema') === false && $jacopiei == 0) {
-                copiarArquivoLocal($mydir . "/" . $nome_arquivo, $plat . "/Sistema/" . $caminho . "/" . $dir . "/", $nome_arquivo, $servidor_ricardo);
-                $jacopiei = 1;
-            } else {
-                if ($jacopiei) {
-                    echo "O arquivo ou pasta " . $nome_arquivo . " já havia sido copiado para a pasta de sistema.\n";
-                } else {
-                    if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-                        $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-                        $src = $mydir . "/" . $nome_pasta;
-                        $dst = $plat . "/Sistema/" . $caminho . "/" . $dir . "/" . $nome_pasta;
-                        copiarDiretorioLocal($src, $dst, $nome_pasta, 1, $servidor_ricardo);
-                        $jacopiei = 1;
-                    } else {
-                        echo "O arquivo " . $nome_arquivo . " nao foi copiado para a pasta de sistema.\n";
-                    }
-                }
-            }
-        }
-
-        if (strpos($nome_arquivo, "pasta") !== false || strpos($nome_arquivo, "Pasta") !== false) {
-            $nome_pasta = str_replace(array("pasta=", "Pasta="), "", $nome_arquivo);
-            if (!empty($site["desenv"])) {
-                $pasta_inicial = "/home/ricardo/web/dev.aguiarsoftware.com.br/public_html";
-            } else {
-                $pasta_inicial = "/httpdocs";
-            }
-            $pasta_ftp = $pasta_inicial . "/" . $site["ftp_pasta_do_site"] . "/" . $pastas_ftp_meio . $dir . "/" . $nome_pasta;
-            echo "Enviando a pasta inteira " . $nome_pasta . " ao FTP...\n";
-            if (!empty($site["sftp"])) {
-                replicar::enviarPastaAoSFTP($site["ftp_host"], $site["ftp_user_login"], $site["ftp_pass"], $mydir . "/" . $nome_pasta, $pasta_ftp, $mydir);
-            } else {
-                replicar::enviarPastaAoFTP($site["ftp_host"], $site["ftp_user_login"], $site["ftp_pass"], $mydir . "/" . $nome_pasta, $pasta_ftp, $mydir);
-            }
+    $sftp = isset($site["protocolo"]) && $site["protocolo"] === "sftp";
+    if (eh_pasta($nome_arquivo)) {
+        $nome_pasta = nome_da_pasta($nome_arquivo);
+        echo "Enviando a pasta inteira " . $nome_pasta . " ao FTP...\n";
+        if ($sftp) {
+            replicar::enviarPastaAoSFTP($site["host"], $site["usuario"], $site["senha"], $mydir . "/" . $nome_pasta, $pasta_remota_pasta, $mydir);
         } else {
-            if (!empty($site["desenv"])) {
-                $pasta_inicial = "/home/ricardo/web/dev.aguiarsoftware.com.br/public_html";
-            } else {
-                $pasta_inicial = "/httpdocs";
-            }
-            if (!empty($site["sftp"])) {
-                replicar::enviarArquivoAoSFTP($site["ftp_host"], $site["ftp_user_login"], $site["ftp_pass"], $mydir, $pasta_inicial . "/" . $site["ftp_pasta_do_site"] . "/" . $pastas_ftp_meio . $pasta_ftp, $nome_arquivo, null, $mydir);
-            } else {
-                replicar::enviarArquivoAoFTP($site["ftp_host"], $site["ftp_user_login"], $site["ftp_pass"], $mydir, $pasta_inicial . "/" . $site["ftp_pasta_do_site"] . "/" . $pastas_ftp_meio . $pasta_ftp, $nome_arquivo, null, $mydir);
-            }
+            replicar::enviarPastaAoFTP($site["host"], $site["usuario"], $site["senha"], $mydir . "/" . $nome_pasta, $pasta_remota_pasta, $mydir);
+        }
+    } else {
+        if ($sftp) {
+            replicar::enviarArquivoAoSFTP($site["host"], $site["usuario"], $site["senha"], $mydir, $pasta_remota_arquivo, $nome_arquivo, null, $mydir);
+        } else {
+            replicar::enviarArquivoAoFTP($site["host"], $site["usuario"], $site["senha"], $mydir, $pasta_remota_arquivo, $nome_arquivo, null, $mydir);
         }
     }
-    if ($pausa == "s") {
-        $pausa = "n";
-        $sistema = "s";
+}
+
+// Base das pastas de backup do grupo Sistema (as dos clientes usam $plat, definido lá em cima)
+$plat_sistema = !empty($win) ? "D:" : "/media/daniel_alves/Novo volume";
+
+// Caminhos dos sites com cópia local na pasta Sistema (Sistema, Solução Multi, NSMart, Dev Ricardo...).
+// Partem do caminho relativo "cru" e tratam o virtuemart do mesmo jeito que o bloco do Sistema fazia.
+$dir_sis = extrairDirRelativo($mydir, $ano, $servidor_ricardo);
+$pastas_ftp_meio_sis = $pastas_ftp_meio;
+if (strpos($dir_sis, "adm/com_virtuemart") !== false || strpos($dir_sis, "com_virtuemart") !== false) {
+    $retirar = substr($dir_sis . 'com_virtuemart', 0, strpos($dir_sis, 'com_virtuemart'));
+    $dir_sis = str_replace($retirar, "", $dir_sis);
+}
+if (strpos($dir_sis, "virtuemart_front") !== false) {
+    $pastas_ftp_meio_sis = "components/";
+    $pos = strpos($dir_sis, 'virtuemart_front');
+    $resto = substr($dir_sis, $pos + strlen('virtuemart_front'));
+    $dir_sis = 'com_virtuemart' . $resto;
+}
+
+// Onde fica o componente dentro da pasta Sistema do HD e como a pasta se chama lá
+$caminho_sis = "";
+$pasta_ftp_sis = $dir_sis;
+$dir_backup_sis = $dir_sis;
+if (strpos($mydir, 'nvoice') !== false) {
+    $caminho_sis = "Vendas/VM Invoice 3";
+    $dir_backup_sis = str_replace("com_vminvoice3", "Vm Invoice3", $dir_sis);
+} else if (strpos($mydir, 'ompra') !== false) {
+    $caminho_sis = "Compras/VM Compra 3";
+    $dir_backup_sis = str_replace("com_vmcompra3", "Vm Compra3", $dir_sis);
+} else if (strpos($mydir, 'inancas') !== false) {
+    $caminho_sis = "AS Finanças/As Finanças 3";
+    $dir_backup_sis = str_replace("com_asfinancas", "admin", $dir_sis);
+} else if (strpos($mydir, 'comissao') !== false) {
+    $caminho_sis = "AS Comissao/AS Comissao3/com_comissao";
+    $dir_backup_sis = str_replace("com_comissao", "admin", $dir_sis);
+} else if (strpos($mydir, 'relatorios') !== false) {
+    $caminho_sis = "AS Relatorios/AS Relatorios 3/com_asrelatorios";
+    $dir_backup_sis = str_replace("com_asrelatorios", "admin", $dir_sis);
+} else if (strpos($mydir, 'servicos') !== false) {
+    $caminho_sis = "VM Servicos/admin";
+    $dir_backup_sis = str_replace("com_vmservicos/", "", $dir_sis);
+} else if (strpos($mydir, 'virtuemart') !== false) {
+    $caminho_sis = "Site com sistema para instalação/Site Completo/" . $pastas_ftp_meio_sis;
+}
+
+// Cópia local pra pasta do cliente (Sacos Bay Plastic, Clube Comary, IFEN...)
+function copia_local_cliente($site)
+{
+    global $mydir, $nome_arquivo, $dir_meio, $plat, $ano, $dir, $servidor_ricardo;
+
+    $pasta_cliente = $site["pasta_cliente"];
+    if ($dir_meio != $pasta_cliente && file_exists($mydir . "/" . $nome_arquivo)) {
+        copiarArquivoLocal($mydir . "/" . $nome_arquivo, $plat . "/" . $pasta_cliente . "/" . $ano . "/" . $dir . "/", $nome_arquivo, $servidor_ricardo);
+    } elseif (eh_pasta($nome_arquivo)) {
+        $nome_pasta = nome_da_pasta($nome_arquivo);
+        $src = $mydir . "/" . $nome_pasta;
+        $dst = $plat . "/" . $pasta_cliente . "/" . $ano . "/" . $dir . "/" . $nome_pasta;
+        copiarDiretorioLocal($src, $dst, $nome_pasta, 1, $servidor_ricardo);
+    } else {
+        echo "O arquivo " . $nome_arquivo . " nao foi copiado pra " . $site["nome"] . ".\n";
     }
+}
+
+// Cópia local pra pasta Sistema - feita uma vez só, no primeiro site do grupo que rodar
+// (igual antes: só no envio de arquivo, não no de pasta inteira)
+function copia_local_sistema()
+{
+    global $mydir, $nome_arquivo, $plat_sistema, $caminho_sis, $dir_backup_sis, $jacopiei, $servidor_ricardo;
+
+    if (!file_exists($mydir . "/" . $nome_arquivo)) {
+        return;
+    }
+    if (strpos($mydir, 'Sistema') === false && $jacopiei == 0) {
+        copiarArquivoLocal($mydir . "/" . $nome_arquivo, $plat_sistema . "/Sistema/" . $caminho_sis . "/" . $dir_backup_sis . "/", $nome_arquivo, $servidor_ricardo);
+        $jacopiei = 1;
+    } elseif ($jacopiei) {
+        echo "O arquivo ou pasta " . $nome_arquivo . " já havia sido copiado para a pasta de sistema.\n";
+    } else {
+        echo "O arquivo " . $nome_arquivo . " nao foi copiado para a pasta de sistema.\n";
+    }
+}
+
+// Sites só pra um tipo específico (ex: "Ecorio site antigo" só pra "vendas antigo"): quando o tipo
+// bate, só esses rodam; nos outros casos eles ficam de fora
+$sites_do_tipo = array();
+foreach ($sites as $site) {
+    if (!empty($site["somente_tipo"]) && $site["somente_tipo"] === $tipo) {
+        $sites_do_tipo[] = $site;
+    }
+}
+if ($sites_do_tipo) {
+    $sites_a_rodar = $sites_do_tipo;
+} else {
+    $sites_a_rodar = array();
+    foreach ($sites as $site) {
+        if (empty($site["somente_tipo"])) {
+            $sites_a_rodar[] = $site;
+        }
+    }
+}
+
+$respostas = array();
+foreach ($sites_a_rodar as $site) {
+    echo "\n\n" . $site["nome"] . "\n";
+
+    // Pergunta, ou segue a resposta de outro site (ex: Solução Multi vai junto com o Sistema)
+    if (!empty($site["perguntar"])) {
+        $vai = perguntar_sn("Deseja atualizar " . $site["nome"] . "?");
+    } else {
+        $junto = !empty($site["junto_com"]) ? $site["junto_com"] : "sistema";
+        $vai = !empty($respostas[$junto]);
+    }
+    $respostas[$site["id"]] = $vai;
+    if (!$vai || site_na_excecao($site, $pesq, $tipo)) {
+        continue;
+    }
+
+    $base = rtrim($site["pasta_remota"], "/");
+    $copia = isset($site["copia_local"]) ? $site["copia_local"] : "nenhuma";
+
+    if ($copia === "sistema") {
+        copia_local_sistema();
+        enviar_ao_site(
+            $site,
+            $base . "/" . $pastas_ftp_meio_sis . $pasta_ftp_sis,
+            $base . "/" . $pastas_ftp_meio_sis . $dir_sis . "/" . nome_da_pasta($nome_arquivo)
+        );
+    } else {
+        if ($copia === "cliente" && !empty($site["pasta_cliente"])) {
+            copia_local_cliente($site);
+        }
+        enviar_ao_site(
+            $site,
+            $base . "/" . $pastas_ftp_meio . $dir,
+            $base . "/" . $pastas_ftp_meio . $dir . "/" . nome_da_pasta($nome_arquivo)
+        );
+    }
+}
+
+if ($sites_do_tipo) {
+    echo "Replicacao de " . $tipo . " terminada!";
+    exit();
 }
 
 echo "Replicacao terminada!\n";
